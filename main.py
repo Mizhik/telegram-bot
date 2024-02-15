@@ -1,9 +1,14 @@
 import telebot
-import webbrowser
 from telebot import types
+import requests
+import json
+import webbrowser
 import sqlite3
 
 bot = telebot.TeleBot("6875628949:AAECqbTHSZbEl6zhXppz3j4OzCtH2CQIp-s")
+API = "aab1fb0cd6f961b2d87c23ae2c01ab64"
+#кнопки та функціонал для них
+'''
 name = None
 
 @bot.message_handler(commands=['database'])
@@ -108,5 +113,29 @@ def callback_message(callback):
         bot.delete_message(callback.message.chat.id, callback.message.message_id - 1)
     elif callback.data == "edit":
         bot.edit_message_text("Edit text", callback.message.chat.id, callback.message.message_id)
+'''
+#погода з сайту, отримуємо назву і виводимо через json данні
+'''
+@bot.message_handler(commands=['start'])
+def start(message):
+    bot.send_message(message.chat.id, "Hello! Enter your city:")
+
+
+@bot.message_handler(content_types=['text'])
+def get_weather(message):
+    city = message.text.strip().lower()
+    res = requests.get(f'https://api.openweathermap.org/data/2.5/weather?q={city}&appid={API}&units=metric')
+    if res.status_code == 200:
+        data = json.loads(res.text)
+        temp = data['main']['temp']
+
+        image = "sun.jpg" if temp > 5.0 else 'snow.jpg'
+        file = open('./' + image, 'rb')
+        bot.send_photo(message.chat.id, file)
+
+        bot.reply_to(message,f"Now weather: {temp}")
+    else:
+        bot.reply_to(message,f"{city} - Сity does not exist")
+'''
 
 bot.infinity_polling()
