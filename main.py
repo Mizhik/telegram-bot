@@ -147,7 +147,7 @@ def site(message):
 def weather_bot(message):
     bot.send_message(message.chat.id, "Hello! Enter your city:")
 
-@bot.message_handler(commands=["start"])
+@bot.message_handler(commands=["start", "back"])
 def start(message):
     file = open("./photo.jpeg", 'rb')
     bot.send_message(message.chat.id, "Hello! I'a Vlad\nThis bot for test\n")
