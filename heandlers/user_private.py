@@ -1,10 +1,11 @@
 import os
-from aiogram import types, Router
-from aiogram.filters import CommandStart, Command
-from aiogram.types import InputFile
+from aiogram import F, types, Router
+from aiogram.filters import CommandStart, Command, or_f
 import webbrowser
+from filters.chat_types import ChatTypeFilter
 
 user_private_router = Router()
+user_private_router.message.filter(ChatTypeFilter(['private']))
 
 @user_private_router.message(CommandStart())
 async def start_bot(message: types.Message):
@@ -24,15 +25,25 @@ async def start_bot(message: types.Message):
 
 @user_private_router.message(Command("github"))
 async def me_gitgub(message):
-    await webbrowser.open("https://github.com/Mizhik/telegram-bot")
-
-
-@user_private_router.message(Command("menu"))
-async def menu_bot(message):
-    await message.answer("Menu:\n1.\n2.\n3.")
+    webbrowser.open("https://github.com/Mizhik/telegram-bot")
 
 @user_private_router.message(Command("creator"))
-async def about_me(message):
+async def about_me(message: types.Message):
     await message.answer_photo(photo=types.FSInputFile('./photo.jpeg'))
     await message.answer("I'a Vlad\n19 years old\nKiev")
+
+
+@user_private_router.message(or_f(Command("menu"),(F.text.lower()=="меню")))
+async def menu_bot(message: types.Message):
+    await message.answer("Меню:\n1.\n2.\n3.")
+
+@user_private_router.message(F.text.lower() == 'варіанти оплати')
+@user_private_router.message(Command("payment"))
+async def payment_bot(message: types.Message):
+    await message.answer("Варіанти оплати:\n-\n-\n-")
+
+@user_private_router.message((F.text.lower().contains("доставк")) | (F.text.lower() == "варіанти доставки"))
+@user_private_router.message(Command("shipping"))
+async def payment_bot(message: types.Message):
+    await message.answer("Варіанти доставки:\n-\n-\n-")
 
