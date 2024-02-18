@@ -1,4 +1,3 @@
-from typing import Any
 from aiogram.filters import Filter
 from aiogram import types
 
