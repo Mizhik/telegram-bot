@@ -5,3 +5,4 @@ snow.jpg
 sun.jpg
 */__pycache__
 config/.env
+my_base.db

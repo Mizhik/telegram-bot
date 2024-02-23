@@ -3,6 +3,9 @@ from aiogram.filters import Command, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 
+from sqlalchemy.ext.asyncio import AsyncSession
+from database.orm_query import orm_add_product, orm_get_products
+
 from filters.chat_types import ChatTypeFilter, IsAdmin
 from kbds.reply import get_keyboard
 
@@ -14,11 +17,9 @@ admin_router.message.filter(ChatTypeFilter(["private"]), IsAdmin())
 
 ADMIN_KB = get_keyboard(
     "Додати товар",
-    "Змінити товар",
-    "Видалити товар",
-    "Оглянути",
+    "Асортимент",
     placeholder="Виберіть дію",
-    sizes=(2, 1, 1),
+    sizes=(2,),
 )
 
 
@@ -27,19 +28,16 @@ async def add_product(message: types.Message):
     await message.answer("Що хочите зробити?", reply_markup=ADMIN_KB)
 
 
-@admin_router.message(F.text == "Оглянути")
-async def starring_at_product(message: types.Message):
+@admin_router.message(F.text == "Асортимент")
+async def starring_at_product(message: types.Message, session: AsyncSession):
+    for product in await orm_get_products(session):
+        await message.answer_photo(
+            product.image,
+            caption=f'<strong>{product.name}\
+                    <strong>\n{product.description}\nЦіна: {round(product.price,2)}',
+        )
     await message.answer("ОК, ось список товарі")
 
-
-@admin_router.message(F.text == "Змінити товар")
-async def change_product(message: types.Message):
-    await message.answer("ОК, ось список товарів")
-
-
-@admin_router.message(F.text == "Видалити товар")
-async def delete_product(message: types.Message):
-    await message.answer("Виберіть товар(и) для видалення")
 
 
 #Код ниже для машины состояний (FSM)
@@ -118,9 +116,15 @@ async def add_price(message: types.Message, state: FSMContext):
     await state.set_state(AddProduct.image)
 
 @admin_router.message(AddProduct.image,F.photo)
-async def add_image(message: types.Message, state: FSMContext):
+async def add_image(message: types.Message, state: FSMContext, session: AsyncSession):
+    
     await state.update_data(image = message.photo[-1].file_id)
-    await message.answer("Товар додано", reply_markup=ADMIN_KB)
     data = await state.get_data()
-    await message.answer(str(data))
-    await state.clear()
+    try:
+        await orm_add_product(session,data)
+        await message.answer("Товар додано", reply_markup=ADMIN_KB)
+        await state.clear()
+    except Exception as e:
+        await message.answer(
+        f"Помилка: \n{str(e)}\n", reply_markup=ADMIN_KB)
+        await state.clear()
